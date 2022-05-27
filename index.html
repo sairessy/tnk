@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App</title>
+  <style>
+    * {
+      font-family: roboto;
+    }
+  </style>
+</head>
+<body>
+  <script src="libraries/js/p5.js"></script>
+  <script src="libraries/js/p5.sound.js"></script>
+  <script src="js/Bomb.js"></script>
+  <script src="js/Bullet.js"></script>
+  <script src="js/Player.js"></script>
+  <script>
+    let player
+    let bomb
+    let bombs = []
+    let kills = 0
+    let gameOver = false
+    let soundShoot = null
+    let soundHit = null
+
+    function preload() {
+      soundShoot = loadSound("./assets/sound/shoot.wav")
+      soundHit = loadSound("./assets/sound/hit3.wav")
+    }
+
+    function setup() {
+      createCanvas(600, 400)
+      soundShoot.setVolume(0.05)
+      soundHit.setVolume(0.1)
+
+      player = new Player()
+      bomb = new Bomb()
+      for (let i = 0; i < 3; i++) {
+        bombs.push(new Bomb(i))
+      }
+    }
+
+    function draw() {
+      background(22)
+      bombs.forEach(b => {
+        b.show()
+      })
+
+      player.show()
+
+      if(!gameOver) {
+        for (let i = 0; i < bombs.length; i++) {
+          const b = bombs[i];
+          const d = dist(b.x, b.y, player.x, player.y)
+          if(d <  0.5 * (bomb.w + player.w)) {
+            gameOver = true
+            break
+          }  
+        }        
+      }
+
+      if(player.bullet != null) {
+        for (let i = 0; i < bombs.length; i++) {
+          const b = bombs[i];
+          const d = dist(b.x, b.y, player.bullet.x, player.bullet.y)
+          if(d < b.w * 0.5) {
+            soundHit.play()
+            kills++
+            bombs[b.id].speed = round(random(0.5, 1.5))
+            player.bullet = null
+            
+            
+            let x = round(random(width, width + 100))
+            let y = round(random(height, height + 100))
+            
+            const d = dist(x, y, player.x, player.y)
+
+            if(d < 100) {
+              x = round(random(width, width + 100))
+              y = round(random(height, height + 100))
+            }
+
+            bombs[b.id].x = x
+            bombs[b.id].y = y  
+
+            break
+          }
+        }
+      }
+
+      for (let i = 0; i < bombs.length; i++) {
+        const b = bombs[i];
+        const m = createVector(player.x - b.x, player.y - b.y)
+        m.normalize()
+        bombs[i].x += m.x * b.speed
+        bombs[i].y += m.y * b.speed
+      }
+
+      if(keyIsPressed) {
+        if(!gameOver) {
+          if(keyCode != 32) {
+            player.move(keyCode)
+          }
+        }
+      }
+
+      push()
+      stroke(100)
+      noFill()
+      text("Kills: " + kills, width - 50, 20)
+      pop()
+
+      if(gameOver) {
+        push()
+        stroke(255, 0, 0)
+        noFill()
+        textSize(54)
+        text("GAME OVER!!!", width * 0.5 - 170, height * 0.5)
+        pop()
+      }
+    }
+
+    function keyPressed(key) {
+      if(!gameOver) {
+        if(keyCode == 32) {
+          if(player.bullet == null) {
+            soundShoot.play()
+            player.fire()
+          }
+        }
+      }
+    }
+  </script>
+</body>
+</html>
